@@ -1,0 +1,243 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Catch-all default deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'sabosenpai33@gmail.com' ||
+        request.auth.token.email == 'athar1style@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\.:]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Admins registry collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // 1. Users collection (Public profile read, secure owner/admin write, stats update on follow)
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isOwner(userId) &&
+        incoming().id == userId &&
+        incoming().username is string && incoming().username.size() <= 40 &&
+        incoming().displayName is string && incoming().displayName.size() <= 60 &&
+        (incoming().role == 'user' || isAdmin()) &&
+        (incoming().isVerified == false || isAdmin()) &&
+        (incoming().status == 'active' || isAdmin());
+      
+      allow update: if (
+        isAdmin() ||
+        (isOwner(userId) && 
+          incoming().id == existing().id &&
+          incoming().role == existing().role &&
+          incoming().isVerified == existing().isVerified &&
+          incoming().status == existing().status &&
+          incoming().isOG == existing().isOG &&
+          incoming().verificationCategory == existing().verificationCategory
+        ) ||
+        (isSignedIn() && incoming().diff(existing()).affectedKeys().hasOnly(['stats', 'xp']))
+      );
+
+      allow delete: if isAdmin() || isOwner(userId);
+    }
+
+    // 2. Usernames reservation (Unique enforce, public read for availability check)
+    match /usernames/{username} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(username) && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && existing().userId == request.auth.uid && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // 3. Posts collection (Public feed read, signed-in author write, counters / like synchronization)
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(postId) &&
+        incoming().authorId == request.auth.uid &&
+        incoming().content is string && incoming().content.size() <= 2000;
+
+      allow update: if (isSignedIn() && (
+        (existing().authorId == request.auth.uid && incoming().authorId == existing().authorId &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['content', 'mediaUrls', 'poll', 'updatedAt', 'isPinned'])) ||
+        (incoming().diff(existing()).affectedKeys().hasOnly(['likesCount', 'likedUserIds', 'commentsCount', 'repostsCount', 'sharesCount', 'poll'])) ||
+        isAdmin()
+      ));
+
+      allow delete: if isSignedIn() && (existing().authorId == request.auth.uid || isAdmin());
+    }
+
+    // 4. Comments collection (Public read, signed-in author write)
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(commentId) &&
+        incoming().authorId == request.auth.uid &&
+        incoming().text is string && incoming().text.size() <= 1000;
+
+      allow update: if isSignedIn() && (
+        (existing().authorId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['text', 'updatedAt'])) ||
+        incoming().diff(existing()).affectedKeys().hasOnly(['likesCount', 'likedUserIds']) ||
+        isAdmin()
+      );
+
+      allow delete: if isSignedIn() && (existing().authorId == request.auth.uid || isAdmin());
+    }
+
+    // 5. Likes collection (Public read, signed-in write)
+    match /likes/{likeId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(likeId) && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // 6. Follows collection (Public read, signed-in write)
+    match /follows/{followId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(followId) && incoming().followerId == request.auth.uid;
+      allow delete: if isSignedIn() && (existing().followerId == request.auth.uid || isAdmin());
+    }
+
+    // 7. Stories collection (Public stories read, author write, view counter update)
+    match /stories/{storyId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(storyId) && incoming().authorId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        existing().authorId == request.auth.uid || 
+        incoming().diff(existing()).affectedKeys().hasOnly(['viewCount', 'viewers']) ||
+        isAdmin()
+      );
+      allow delete: if isSignedIn() && (existing().authorId == request.auth.uid || isAdmin());
+    }
+
+    // 8. Conversations collection (Strict participant or admin read/write)
+    match /conversations/{conversationId} {
+      allow read: if isSignedIn() && (request.auth.uid in resource.data.participantIds || isAdmin());
+      allow create: if isSignedIn() && isValidId(conversationId) && request.auth.uid in incoming().participantIds;
+      allow update: if isSignedIn() && (request.auth.uid in existing().participantIds || isAdmin());
+      allow delete: if isAdmin() || (isSignedIn() && request.auth.uid in existing().participantIds);
+    }
+
+    // 9. Messages collection (Strict participant-only read, authorized author write)
+    match /messages/{messageId} {
+      allow read: if isSignedIn() && (
+        (resource.data.participantIds != null && request.auth.uid in resource.data.participantIds) ||
+        resource.data.senderId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isSignedIn() && isValidId(messageId) &&
+        incoming().senderId == request.auth.uid &&
+        (incoming().participantIds != null && request.auth.uid in incoming().participantIds);
+      allow update: if isSignedIn() && (
+        (existing().senderId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['text', 'isRead'])) ||
+        incoming().diff(existing()).affectedKeys().hasOnly(['reactions', 'isRead']) ||
+        isAdmin()
+      );
+      allow delete: if isSignedIn() && (existing().senderId == request.auth.uid || isAdmin());
+    }
+
+    // 10. Social Events (Public read, organizer/admin write)
+    match /events/{eventId} {
+      allow read: if true;
+      allow create: if isSignedIn() && (incoming().organizer.id == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() && (
+        existing().organizer.id == request.auth.uid ||
+        isAdmin() ||
+        incoming().diff(existing()).affectedKeys().hasOnly(['registeredCount', 'participantUserIds'])
+      );
+      allow delete: if isSignedIn() && (existing().organizer.id == request.auth.uid || isAdmin());
+    }
+
+    // 11. Event Participants (Public read, participant write)
+    match /event_participants/{participantId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(participantId) && incoming().userId == request.auth.uid;
+      allow delete: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    // 12. Notifications (Private recipient only)
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && (resource.data.recipientId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidId(notificationId) && incoming().actorId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        (existing().recipientId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['isRead'])) ||
+        isAdmin()
+      );
+      allow delete: if isSignedIn() && (existing().recipientId == request.auth.uid || isAdmin());
+    }
+
+    // 13. Reports (Moderation - Reporter and staff only)
+    match /reports/{reportId} {
+      allow read: if isSignedIn() && (resource.data.reporterId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && isValidId(reportId) && incoming().reporterId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // 14. Audit logs (Admin only)
+    match /audit_logs/{auditId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() || (isSignedIn() && incoming().actorId == request.auth.uid);
+      allow update: if false; // Immutable audit trail
+      allow delete: if false; // Immutable audit trail
+    }
+
+    // 15. In-App Announcements & Ads
+    match /announcements/{annId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 16. WebRTC Voice Calls
+    match /voice_calls/{callId} {
+      allow read: if isSignedIn() && (
+        resource.data.callerId == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid ||
+        isAdmin()
+      );
+      allow create: if isSignedIn() && isValidId(callId) && incoming().callerId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        resource.data.callerId == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid ||
+        isAdmin()
+      );
+      allow delete: if isSignedIn() && (
+        resource.data.callerId == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+
+    // 17. Platform Settings (Public read, admin write)
+    match /platform_settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}

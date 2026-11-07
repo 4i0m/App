@@ -1,0 +1,413 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with progression, role, and customization options",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string", "maxLength": 40 },
+        "displayName": { "type": "string", "maxLength": 60 },
+        "email": { "type": "string", "maxLength": 120 },
+        "avatarUrl": { "type": "string", "maxLength": 500 },
+        "coverUrl": { "type": "string", "maxLength": 500 },
+        "bio": { "type": "string", "maxLength": 300 },
+        "role": { "type": "string", "enum": ["owner", "super_admin", "admin", "senior_moderator", "moderator", "assistant", "user"] },
+        "isVerified": { "type": "boolean" },
+        "verificationCategory": { "type": "string", "maxLength": 50 },
+        "isOG": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["active", "warned", "muted", "restricted", "suspended", "banned"] },
+        "level": { "type": "number" },
+        "xp": { "type": "number" },
+        "nextLevelXp": { "type": "number" },
+        "stats": { "type": "object" },
+        "titles": { "type": "array" },
+        "badges": { "type": "array" },
+        "appearancePreset": { "type": "string", "maxLength": 30 },
+        "accentColor": { "type": "string", "maxLength": 30 },
+        "privacy": { "type": "object" },
+        "sectionVisibility": { "type": "object" },
+        "isOnline": { "type": "boolean" },
+        "lastActive": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "username", "displayName", "role", "status", "level", "xp"]
+    },
+    "UsernameReservation": {
+      "title": "UsernameReservation",
+      "description": "Unique username claim to prevent duplicates",
+      "type": "object",
+      "properties": {
+        "username": { "type": "string", "maxLength": 40 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["username", "userId"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "User-generated feed post",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 60 },
+        "authorUsername": { "type": "string", "maxLength": 40 },
+        "authorAvatar": { "type": "string", "maxLength": 500 },
+        "authorVerified": { "type": "boolean" },
+        "authorVerificationCategory": { "type": "string" },
+        "authorRole": { "type": "string" },
+        "authorLevel": { "type": "number" },
+        "content": { "type": "string", "maxLength": 2000 },
+        "mediaUrls": { "type": "array" },
+        "poll": { "type": "object" },
+        "likesCount": { "type": "number" },
+        "commentsCount": { "type": "number" },
+        "repostsCount": { "type": "number" },
+        "sharesCount": { "type": "number" },
+        "isPinned": { "type": "boolean" },
+        "isFeatured": { "type": "boolean" },
+        "isHidden": { "type": "boolean" },
+        "isCommentsLocked": { "type": "boolean" },
+        "category": { "type": "string", "maxLength": 50 },
+        "tags": { "type": "array" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "authorId", "authorUsername", "content"]
+    },
+    "PostComment": {
+      "title": "PostComment",
+      "description": "Comment on a post",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "postId": { "type": "string", "maxLength": 128 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 60 },
+        "authorUsername": { "type": "string", "maxLength": 40 },
+        "authorAvatar": { "type": "string", "maxLength": 500 },
+        "authorVerified": { "type": "boolean" },
+        "authorRole": { "type": "string" },
+        "text": { "type": "string", "maxLength": 1000 },
+        "likesCount": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "postId", "authorId", "text"]
+    },
+    "Like": {
+      "title": "Like",
+      "description": "Like record on post or comment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "postId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "postId", "userId"]
+    },
+    "Follow": {
+      "title": "Follow",
+      "description": "Follow relationship between users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "followerId": { "type": "string", "maxLength": 128 },
+        "followingId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "followerId", "followingId"]
+    },
+    "Story": {
+      "title": "Story",
+      "description": "Ephemeral 24h story",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorName": { "type": "string", "maxLength": 60 },
+        "authorAvatar": { "type": "string", "maxLength": 500 },
+        "type": { "type": "string", "enum": ["image", "text"] },
+        "imageUrl": { "type": "string", "maxLength": 500 },
+        "textContent": { "type": "string", "maxLength": 500 },
+        "viewCount": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "authorId", "type"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Chat thread between two or more members",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "isGroup": { "type": "boolean" },
+        "name": { "type": "string", "maxLength": 100 },
+        "avatarUrl": { "type": "string", "maxLength": 500 },
+        "participantIds": { "type": "array" },
+        "participants": { "type": "array" },
+        "lastMessage": { "type": "string", "maxLength": 1000 },
+        "lastMessageTimestamp": { "type": "string" },
+        "unreadCount": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "participantIds"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Chat message inside a conversation (text, image, or voice note)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "conversationId": { "type": "string", "maxLength": 128 },
+        "senderId": { "type": "string", "maxLength": 128 },
+        "senderName": { "type": "string", "maxLength": 60 },
+        "senderAvatar": { "type": "string", "maxLength": 500 },
+        "text": { "type": "string", "maxLength": 2000 },
+        "mediaUrl": { "type": "string", "maxLength": 500 },
+        "mediaType": { "type": "string", "enum": ["image", "voice", "file"] },
+        "audioDuration": { "type": "number" },
+        "timestamp": { "type": "string" },
+        "isRead": { "type": "boolean" },
+        "reactions": { "type": "array" }
+      },
+      "required": ["id", "conversationId", "senderId"]
+    },
+    "SocialEvent": {
+      "title": "SocialEvent",
+      "description": "Platform social event or tournament",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 150 },
+        "subtitle": { "type": "string", "maxLength": 250 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "coverUrl": { "type": "string", "maxLength": 500 },
+        "dateStr": { "type": "string", "maxLength": 50 },
+        "timeStr": { "type": "string", "maxLength": 50 },
+        "locationType": { "type": "string", "enum": ["in_app", "virtual", "physical"] },
+        "locationLabel": { "type": "string", "maxLength": 100 },
+        "organizer": { "type": "object" },
+        "registeredCount": { "type": "number" },
+        "maxParticipants": { "type": "number" },
+        "isOfficial": { "type": "boolean" },
+        "category": { "type": "string", "maxLength": 50 },
+        "participantUserIds": { "type": "array" },
+        "prizes": { "type": "array" },
+        "rules": { "type": "array" },
+        "status": { "type": "string", "enum": ["active", "completed", "cancelled"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "description", "category"]
+    },
+    "EventParticipant": {
+      "title": "EventParticipant",
+      "description": "Participant registration in event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "eventId": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "joinedAt": { "type": "string" }
+      },
+      "required": ["id", "eventId", "userId"]
+    },
+    "AppNotification": {
+      "title": "AppNotification",
+      "description": "User notification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "maxLength": 50 },
+        "actorId": { "type": "string", "maxLength": 128 },
+        "actorName": { "type": "string", "maxLength": 60 },
+        "actorUsername": { "type": "string", "maxLength": 40 },
+        "actorAvatar": { "type": "string", "maxLength": 500 },
+        "actorVerified": { "type": "boolean" },
+        "recipientId": { "type": "string", "maxLength": 128 },
+        "content": { "type": "string", "maxLength": 500 },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "targetPreview": { "type": "string", "maxLength": 200 },
+        "timestamp": { "type": "string" },
+        "isRead": { "type": "boolean" }
+      },
+      "required": ["id", "type", "actorId", "content"]
+    },
+    "ModerationReport": {
+      "title": "ModerationReport",
+      "description": "User report against inappropriate content or conduct",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "reporterId": { "type": "string", "maxLength": 128 },
+        "reporterName": { "type": "string", "maxLength": 60 },
+        "targetType": { "type": "string", "enum": ["user", "post", "comment", "story", "message", "event"] },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "targetTitleOrSnippet": { "type": "string", "maxLength": 250 },
+        "targetAuthorId": { "type": "string", "maxLength": 128 },
+        "targetAuthorName": { "type": "string", "maxLength": 60 },
+        "category": { "type": "string", "maxLength": 50 },
+        "explanation": { "type": "string", "maxLength": 1000 },
+        "timestamp": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "under_review", "escalated", "resolved", "rejected"] },
+        "assignedStaffId": { "type": "string", "maxLength": 128 },
+        "assignedStaffName": { "type": "string", "maxLength": 60 },
+        "moderatorNotes": { "type": "string", "maxLength": 1000 },
+        "resolutionAction": { "type": "string", "maxLength": 100 }
+      },
+      "required": ["id", "reporterId", "targetType", "targetId", "category", "explanation", "status"]
+    },
+    "AuditLogEntry": {
+      "title": "AuditLogEntry",
+      "description": "Administrative actions audit log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "actorId": { "type": "string", "maxLength": 128 },
+        "actorName": { "type": "string", "maxLength": 60 },
+        "actorRole": { "type": "string", "maxLength": 50 },
+        "action": { "type": "string", "maxLength": 100 },
+        "target": { "type": "string", "maxLength": 150 },
+        "reason": { "type": "string", "maxLength": 500 },
+        "details": { "type": "string", "maxLength": 1000 },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "actorId", "actorRole", "action", "target"]
+    },
+    "PlatformAnnouncement": {
+      "title": "PlatformAnnouncement",
+      "description": "In-app announcements and promotional ads managed by Owner",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 150 },
+        "content": { "type": "string", "maxLength": 1000 },
+        "type": { "type": "string", "enum": ["banner", "modal", "feed"] },
+        "imageUrl": { "type": "string", "maxLength": 500 },
+        "actionText": { "type": "string", "maxLength": 50 },
+        "actionUrl": { "type": "string", "maxLength": 500 },
+        "targetRole": { "type": "string" },
+        "authorName": { "type": "string", "maxLength": 60 },
+        "timestamp": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "content"]
+    },
+    "VoiceCall": {
+      "title": "VoiceCall",
+      "description": "Real-time WebRTC 1-on-1 Voice Call signaling document",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "callerId": { "type": "string", "maxLength": 128 },
+        "callerName": { "type": "string", "maxLength": 60 },
+        "callerAvatar": { "type": "string", "maxLength": 500 },
+        "receiverId": { "type": "string", "maxLength": 128 },
+        "receiverName": { "type": "string", "maxLength": 60 },
+        "receiverAvatar": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "enum": ["calling", "ringing", "connected", "ended", "rejected", "busy"] },
+        "offer": { "type": "object" },
+        "answer": { "type": "object" },
+        "callerCandidates": { "type": "array" },
+        "receiverCandidates": { "type": "array" },
+        "startedAt": { "type": "string" },
+        "endedAt": { "type": "string" },
+        "durationSeconds": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "callerId", "receiverId", "status"]
+    },
+    "PlatformSettings": {
+      "title": "PlatformSettings",
+      "description": "Global platform configurations, welcome banner, and operational controls",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "appName": { "type": "string", "maxLength": 50 },
+        "allowNewRegistrations": { "type": "boolean" },
+        "maintenanceMode": { "type": "boolean" },
+        "xpPerPost": { "type": "number" },
+        "xpPerComment": { "type": "number" },
+        "xpPerEventWin": { "type": "number" },
+        "requireEmailVerification": { "type": "boolean" },
+        "maxPinnedPostsPerProfile": { "type": "number" },
+        "defaultLanguage": { "type": "string", "maxLength": 10 },
+        "welcomeBanner": { "type": "object" }
+      },
+      "required": ["id", "appName"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile with progression, role, and customization options"
+    },
+    "/usernames/{username}": {
+      "schema": "UsernameReservation",
+      "description": "Unique username claim to prevent duplicates"
+    },
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "User-generated feed post"
+    },
+    "/comments/{commentId}": {
+      "schema": "PostComment",
+      "description": "Comment on a post"
+    },
+    "/likes/{likeId}": {
+      "schema": "Like",
+      "description": "Like record on post or comment"
+    },
+    "/follows/{followId}": {
+      "schema": "Follow",
+      "description": "Follow relationship between users"
+    },
+    "/stories/{storyId}": {
+      "schema": "Story",
+      "description": "Ephemeral 24h story"
+    },
+    "/conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "Chat thread between two or more members"
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Chat message inside a conversation"
+    },
+    "/events/{eventId}": {
+      "schema": "SocialEvent",
+      "description": "Platform social event or tournament"
+    },
+    "/event_participants/{participantId}": {
+      "schema": "EventParticipant",
+      "description": "Participant registration in event"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "AppNotification",
+      "description": "User notification"
+    },
+    "/reports/{reportId}": {
+      "schema": "ModerationReport",
+      "description": "User report against inappropriate content or conduct"
+    },
+    "/audit_logs/{auditId}": {
+      "schema": "AuditLogEntry",
+      "description": "Administrative actions audit log"
+    },
+    "/announcements/{announcementId}": {
+      "schema": "PlatformAnnouncement",
+      "description": "In-app announcements and promotional ads managed by Owner"
+    },
+    "/voice_calls/{callId}": {
+      "schema": "VoiceCall",
+      "description": "Real-time WebRTC 1-on-1 Voice Call signaling document"
+    },
+    "/platform_settings/{settingId}": {
+      "schema": "PlatformSettings",
+      "description": "Global platform configurations and operational controls"
+    }
+  }
+}
