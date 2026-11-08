@@ -30,6 +30,7 @@ export const SettingsScreen: React.FC = () => {
     language,
     setLanguage,
     currentUser,
+    firebaseUser,
     logout,
     navigateTo,
     setShowAndroidCodeExport,
@@ -256,7 +257,7 @@ export const SettingsScreen: React.FC = () => {
             </div>
             <div className="flex justify-between py-1 border-b border-white/[0.04]">
               <span className="text-[#8E8E93]">البريد الإلكتروني:</span>
-              <span className="text-white font-medium force-ltr">alexander@q.social</span>
+              <span className="text-white font-medium force-ltr">{firebaseUser?.email || `${currentUser.username}@q.network`}</span>
             </div>
             <div className="flex justify-between py-1 border-b border-white/[0.04]">
               <span className="text-[#8E8E93]">رقم المعرف الموحد:</span>

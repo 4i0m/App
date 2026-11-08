@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Search, Bell, Wifi, BatteryMedium, Signal, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Search, Bell, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { QLogo } from './QLogo';
 import { UserAvatar } from './UserAvatar';
@@ -51,19 +51,7 @@ export const AndroidTopBar: React.FC<AndroidTopBarProps> = ({
     <header className={`sticky top-0 z-30 w-full transition-colors ${
       transparent ? 'bg-transparent' : 'bg-black/95 backdrop-blur-md border-b border-white/[0.06]'
     }`}>
-      {/* Native Android Status Bar (9:41, Camera cutout, Signal, Wifi, Battery) */}
-      <div className="flex items-center justify-between px-6 pt-2 pb-1 text-xs text-[#A8A8A8] select-none">
-        <span className="font-semibold tracking-tight text-white force-ltr">9:41</span>
-        
-        {/* Subtle camera punch hole indicator */}
-        <div className="w-3.5 h-3.5 rounded-full bg-black ring-1 ring-white/10 shrink-0 shadow-inner" />
-
-        <div className="flex items-center gap-1.5 force-ltr">
-          <Signal size={12} strokeWidth={2.2} />
-          <Wifi size={12} strokeWidth={2.2} />
-          <BatteryMedium size={14} strokeWidth={2.2} className="text-white" />
-        </div>
-      </div>
+      {/* Clean Top Navigation Bar */}
 
       {/* Main Top Bar Zone matching Screenshot 2 */}
       <div className="flex items-center justify-between px-4 h-12">

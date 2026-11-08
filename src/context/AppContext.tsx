@@ -568,6 +568,72 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return () => unsubscribeAuth();
   }, []);
 
+  // Active Presence Heartbeat & Online/Offline Lifecycle in Firestore
+  useEffect(() => {
+    if (!firebaseUser) return;
+    const uid = firebaseUser.uid;
+    const userRef = doc(db, 'users', uid);
+
+    const markOnline = async () => {
+      try {
+        await updateDoc(userRef, {
+          isOnline: true,
+          lastSeen: new Date().toISOString()
+        });
+      } catch (_) {}
+    };
+
+    const markOffline = async () => {
+      try {
+        await updateDoc(userRef, {
+          isOnline: false,
+          lastSeen: new Date().toISOString()
+        });
+      } catch (_) {}
+    };
+
+    markOnline();
+
+    // Periodic heartbeat every 45 seconds while user is actively in session
+    const heartbeatTimer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible' && navigator.onLine) {
+        markOnline();
+      }
+    }, 45000);
+
+    // Tab visibility handler
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        markOnline();
+      } else {
+        markOffline();
+      }
+    };
+
+    // Network status handlers
+    const handleOnline = () => markOnline();
+    const handleOffline = () => markOffline();
+
+    // Page unload handler
+    const handleBeforeUnload = () => {
+      markOffline();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearInterval(heartbeatTimer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      markOffline();
+    };
+  }, [firebaseUser]);
+
   // Real-time Firestore synchronizer for Public and Private collections
   useEffect(() => {
     let unsubPosts: (() => void) | undefined;
@@ -952,6 +1018,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const logout = () => {
+    if (firebaseUser) {
+      updateDoc(doc(db, 'users', firebaseUser.uid), {
+        isOnline: false,
+        lastSeen: new Date().toISOString()
+      }).catch(() => {});
+    }
     signOut(auth).catch(() => {});
     setFirebaseUser(null);
     setCurrentUserId('');

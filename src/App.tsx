@@ -28,6 +28,7 @@ import { CommentsModal } from './components/common/CommentsModal';
 import { StoryViewerModal } from './components/common/StoryViewerModal';
 import { LightboxModal } from './components/common/LightboxModal';
 import { AndroidCodeExportModal } from './components/export/AndroidCodeExportModal';
+import { OfflineIndicator } from './components/common/OfflineIndicator';
 import { App as CapApp } from '@capacitor/app';
 import { StatusBar, Style } from '@capacitor/status-bar';
 
@@ -174,6 +175,9 @@ const AppContent: React.FC = () => {
         {renderCurrentScreen()}
 
         {shouldShowBottomNav && <AndroidBottomNav />}
+
+        {/* Real-time Network Connectivity Banner */}
+        <OfflineIndicator />
 
         {/* Global Overlays & Modals */}
         <ProfileDrawer />

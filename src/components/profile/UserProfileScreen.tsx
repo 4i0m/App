@@ -230,9 +230,14 @@ export const UserProfileScreen: React.FC = () => {
                 />
               </div>
             </div>
-            {viewingUser.isOnline && (
-              <span className="absolute bottom-1 end-1 w-4 h-4 rounded-full bg-[#10B981] ring-3 ring-black shadow-md" />
-            )}
+            {(() => {
+              const isViewingUserOnline = Boolean(viewingUser.isOnline) && (
+                !viewingUser.lastSeen || (Date.now() - new Date(viewingUser.lastSeen).getTime() < 3 * 60 * 1000)
+              );
+              return isViewingUserOnline ? (
+                <span className="absolute bottom-1 end-1 w-4 h-4 rounded-full bg-[#10B981] ring-3 ring-black shadow-md animate-pulse" title="متصل الآن" />
+              ) : null;
+            })()}
           </div>
 
           {/* Action buttons (Follow & Message & Call) positioned next to avatar */}

@@ -19,6 +19,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { UserAvatar } from '../common/UserAvatar';
 import { VerifiedBadge, OGBadge, TitleChip } from '../common/BadgePill';
+import { PWAInstallButton } from '../common/PWAInstallButton';
 
 export const ProfileDrawer: React.FC = () => {
   const {
@@ -172,6 +173,11 @@ export const ProfileDrawer: React.FC = () => {
                 </button>
               );
             })}
+
+            {/* In-App PWA Install Trigger */}
+            <div className="py-1">
+              <PWAInstallButton variant="menuItem" />
+            </div>
 
             {/* Admin Dashboard trigger for staff */}
             {isStaff && (

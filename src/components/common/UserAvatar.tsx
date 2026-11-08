@@ -44,7 +44,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
   name = 'User',
   size = 'md',
   showOnline = false,
-  isOnline = true,
+  isOnline,
   className = '',
   clickable = true,
   borderStyle = 'subtle',
@@ -55,7 +55,19 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
 
   const resolvedUser = userId ? allUsers[userId] : null;
   const finalAvatar = avatarUrl || resolvedUser?.avatarUrl || createGradientAvatar(name);
-  const finalOnline = showOnline && (isOnline || resolvedUser?.isOnline);
+
+  // Calculate real presence: explicit boolean prop OR check resolvedUser status with 3-minute heartbeat window
+  const isUserActiveRecently = React.useMemo(() => {
+    if (!resolvedUser) return false;
+    if (!resolvedUser.isOnline) return false;
+    if (resolvedUser.lastSeen) {
+      const diffMs = Date.now() - new Date(resolvedUser.lastSeen).getTime();
+      return diffMs < 3 * 60 * 1000; // active within last 3 minutes
+    }
+    return Boolean(resolvedUser.isOnline);
+  }, [resolvedUser]);
+
+  const finalOnline = showOnline && (isOnline !== undefined ? isOnline : isUserActiveRecently);
 
   const handleClick = (e: React.MouseEvent) => {
     if (onClick) {

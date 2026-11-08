@@ -31,7 +31,7 @@ export const HomeFeed: React.FC = () => {
       return isFollowing(post.authorId) || post.authorId === currentUser.id;
     }
     if (activeFeedTab === 'trending') {
-      return post.likesCount > 1000 || post.repostsCount > 100;
+      return (post.likesCount || 0) > 0 || (post.commentsCount || 0) > 0 || (post.repostsCount || 0) > 0;
     }
     return true; // For You shows all global posts
   });

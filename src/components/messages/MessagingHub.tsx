@@ -519,44 +519,65 @@ export const MessagingHub: React.FC = () => {
         </button>
       </div>
 
-      {/* 4. Active Now Row matching Screenshot 3 */}
-      <div className="px-4 py-3 border-b border-white/[0.06]">
-        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-1">
-          {/* Online count pill */}
-          <div className="flex flex-col items-center shrink-0">
-            <div className="w-12 h-12 rounded-full bg-[#191919] border border-white/10 flex items-center justify-center text-xs font-bold text-white shadow">
-              +40
-            </div>
-            <span className="text-[10px] text-[#10B981] font-medium mt-1 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-              <span>145 {t.connectedNow}</span>
-            </span>
-          </div>
+      {/* 4. Active Now Row - 100% Real Live Online Presence */}
+      {(() => {
+        const activeOnlineUsers = Object.values(allUsers).filter(u => {
+          if (u.id === currentUserId) return false;
+          if (!u.isOnline) return false;
+          if (u.lastSeen) {
+            const diffMs = Date.now() - new Date(u.lastSeen).getTime();
+            return diffMs < 3 * 60 * 1000;
+          }
+          return Boolean(u.isOnline);
+        });
 
-          {/* Online user avatars */}
-          {Object.values(allUsers)
-            .filter(u => u.id !== currentUserId && u.isOnline)
-            .map(user => (
-              <div
-                key={user.id}
-                onClick={() => startDirectMessageWith(user.id)}
-                className="flex flex-col items-center shrink-0 cursor-pointer group"
-              >
-                <UserAvatar
-                  userId={user.id}
-                  avatarUrl={user.avatarUrl}
-                  name={user.displayName}
-                  size="md"
-                  clickable={false}
-                  showOnline={true}
-                />
-                <span className="text-[10px] text-[#A8A8A8] group-hover:text-white truncate max-w-[50px] mt-1">
-                  {user.displayName}
+        const totalActiveCount = activeOnlineUsers.length + 1; // Including the current user
+
+        return (
+          <div className="px-4 py-3 border-b border-white/[0.06]">
+            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-1">
+              {/* Online count pill */}
+              <div className="flex flex-col items-center shrink-0">
+                <div className="w-12 h-12 rounded-full bg-[#191919] border border-white/10 flex items-center justify-center text-xs font-bold text-[#10B981] shadow">
+                  {totalActiveCount}
+                </div>
+                <span className="text-[10px] text-[#10B981] font-medium mt-1 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
+                  <span>{totalActiveCount} {t.connectedNow}</span>
                 </span>
               </div>
-            ))}
-        </div>
-      </div>
+
+              {/* Online user avatars */}
+              {activeOnlineUsers.length === 0 ? (
+                <div className="text-[11px] text-[#8E8E93] italic px-2 flex items-center">
+                  {isRTL ? 'أنت الوحيد المتصل حالياً' : 'You are currently the only active user'}
+                </div>
+              ) : (
+                activeOnlineUsers.map(user => (
+                  <div
+                    key={user.id}
+                    onClick={() => startDirectMessageWith(user.id)}
+                    className="flex flex-col items-center shrink-0 cursor-pointer group"
+                  >
+                    <UserAvatar
+                      userId={user.id}
+                      avatarUrl={user.avatarUrl}
+                      name={user.displayName}
+                      size="md"
+                      clickable={false}
+                      showOnline={true}
+                      isOnline={true}
+                    />
+                    <span className="text-[10px] text-[#A8A8A8] group-hover:text-white truncate max-w-[50px] mt-1">
+                      {user.displayName}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 5. Chat List matching Screenshot 3 */}
       <div className="divide-y divide-white/[0.06]">
