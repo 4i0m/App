@@ -54,6 +54,9 @@ export async function signInWithGoogle(): Promise<AuthResponse> {
       friendlyMessage = 'تم إغلاق نافذة تسجيل الدخول قبل إتمام العملية.';
     } else if (authErr.code === 'auth/cancelled-popup-request') {
       friendlyMessage = 'تم إلغاء طلب تسجيل الدخول.';
+    } else if (authErr.code === 'auth/unauthorized-domain') {
+      const hostname = typeof window !== 'undefined' ? window.location.hostname : 'current domain';
+      friendlyMessage = `auth/unauthorized-domain: النطاق (${hostname}) غير مصرح به في Firebase Console. يرجى إضافته إلى Authorized Domains في مشروع yachty-exchanger-fm4ph.`;
     } else if (authErr.code === 'auth/network-request-failed') {
       friendlyMessage = 'تعذر الاتصال بالشبكة، يرجى التحقق من اتصالك بالإنترنت.';
     } else if (authErr.message) {

@@ -890,7 +890,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setAuthMode('authenticated');
       return { success: true };
     } catch (err: any) {
-      return { success: false, error: err.message || 'تعذر تسجيل الدخول عبر حساب Google.' };
+      console.warn('Google Sign-in failed:', err.code, err.message);
+      let errorMsg = err.message || 'تعذر تسجيل الدخول عبر حساب Google.';
+      if (err.code === 'auth/unauthorized-domain') {
+        const hostname = typeof window !== 'undefined' ? window.location.hostname : 'current domain';
+        errorMsg = language === 'ar'
+          ? `النطاق الحالي (${hostname}) غير مصرح به في Firebase Authentication. يرجى إضافته إلى قائمة Authorized Domains في لوحة تحكم مشروع yachty-exchanger-fm4ph.`
+          : `Current domain (${hostname}) is not authorized in Firebase Authentication. Please add it to Authorized Domains in project yachty-exchanger-fm4ph.`;
+      } else if (err.code === 'auth/popup-closed-by-user') {
+        errorMsg = language === 'ar' ? 'تم إغلاق نافذة تسجيل الدخول قبل إتمام العملية.' : 'Sign-in popup was closed.';
+      } else if (err.code === 'auth/cancelled-popup-request') {
+        errorMsg = language === 'ar' ? 'تم إلغاء طلب تسجيل الدخول.' : 'Sign-in request was cancelled.';
+      }
+      return { success: false, error: errorMsg };
     }
   };
 

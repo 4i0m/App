@@ -20,7 +20,9 @@ import {
   CheckCircle2,
   ChevronDown,
   Mail,
-  UserCheck
+  UserCheck,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
 import { LoginForm } from './auth/AuthScreen';
 
@@ -51,6 +53,10 @@ export const Landing: React.FC<LandingProps> = ({ children, onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showAlternativeLogin, setShowAlternativeLogin] = useState(false);
+  const [copiedDomain, setCopiedDomain] = useState(false);
+
+  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : '';
+  const isUnauthorizedDomain = errorMessage?.includes('auth/unauthorized-domain') || errorMessage?.includes('Authorized Domains');
 
   // Check if user is authenticated (Protected Component check)
   const isUserAuthenticated = authMode === 'authenticated' && !!firebaseUser;
@@ -60,34 +66,26 @@ export const Landing: React.FC<LandingProps> = ({ children, onSuccess }) => {
     return <>{children}</>;
   }
 
-  // Handle Google Sign-In using auth.ts helper + AppContext sync
+  // Handle Google Sign-In with direct AppContext integration (avoids double popup)
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setErrorMessage(null);
 
     try {
-      // Execute the Google popup sign-in
-      const res = await signInWithGoogle();
-
-      if (res.error) {
-        setErrorMessage(res.error);
-        setIsLoading(false);
-        return;
-      }
-
-      if (res.user) {
-        // Synchronize with application state
-        await appLoginWithGoogle();
-        if (onSuccess) {
-          onSuccess();
-        }
+      const res = await appLoginWithGoogle();
+      if (!res.success) {
+        setErrorMessage(res.error || 'تعذر تسجيل الدخول عبر حساب Google.');
+      } else if (onSuccess) {
+        onSuccess();
       }
     } catch (err: unknown) {
       console.error('Landing Google Sign-in Error:', err);
+      const e = err as any;
       setErrorMessage(
-        language === 'ar'
+        e?.message ||
+        (language === 'ar'
           ? 'تعذر إكمال تسجيل الدخول باستخدام حساب Google. يرجى المحاولة مرة أخرى.'
-          : 'Unable to complete sign in with Google. Please try again.'
+          : 'Unable to complete sign in with Google. Please try again.')
       );
     } finally {
       setIsLoading(false);
@@ -159,11 +157,51 @@ export const Landing: React.FC<LandingProps> = ({ children, onSuccess }) => {
 
         {/* Error Alert if any */}
         {errorMessage && (
-          <div className="w-full mb-4 p-3 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-start gap-2.5 text-start animate-in fade-in">
-            <AlertCircle size={16} className="text-red-400 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-[11px] font-medium text-red-300 leading-snug">{errorMessage}</p>
+          <div className="w-full mb-4 p-3.5 rounded-2xl bg-red-500/10 border border-red-500/30 text-start animate-in fade-in space-y-2.5">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle size={16} className="text-red-400 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-[11px] font-medium text-red-300 leading-snug">{errorMessage}</p>
+              </div>
             </div>
+
+            {isUnauthorizedDomain && (
+              <div className="pt-2 border-t border-red-500/20 space-y-2">
+                <div className="flex items-center justify-between bg-black/60 px-3 py-1.5 rounded-xl border border-white/10 text-xs">
+                  <span className="font-mono text-[11px] text-[#DFCA98] truncate">{currentHostname}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (currentHostname) {
+                        navigator.clipboard.writeText(currentHostname);
+                        setCopiedDomain(true);
+                        setTimeout(() => setCopiedDomain(false), 2000);
+                      }
+                    }}
+                    className="flex items-center gap-1 text-[10px] text-white/80 hover:text-white px-2 py-0.5 bg-white/10 hover:bg-white/20 rounded-md shrink-0 transition-colors"
+                  >
+                    {copiedDomain ? <CheckCircle2 size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                    <span>{copiedDomain ? (language === 'ar' ? 'تم النسخ' : 'Copied') : (language === 'ar' ? 'نسخ النطاق' : 'Copy Domain')}</span>
+                  </button>
+                </div>
+                <a
+                  href="https://console.firebase.google.com/project/yachty-exchanger-fm4ph/authentication/settings"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-xl bg-[#C5A46D]/20 text-[#DFCA98] hover:bg-[#C5A46D]/30 border border-[#C5A46D]/40 text-[11px] font-semibold transition-all"
+                >
+                  <ExternalLink size={12} />
+                  <span>{language === 'ar' ? 'إضافة النطاق في Firebase Console' : 'Add Domain in Firebase Console'}</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setShowAlternativeLogin(true)}
+                  className="w-full text-center text-[10px] text-[#DFCA98]/80 hover:text-[#DFCA98] hover:underline pt-1"
+                >
+                  {language === 'ar' ? 'أو سجّل الدخول الفوري بالبريد الإلكتروني ↓' : 'Or use instant email login ↓'}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
